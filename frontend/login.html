@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login • Algae Carbon Monitor</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;min-height:100vh;background:linear-gradient(135deg,#ecfdf5,#f8fafc);display:flex;align-items:center;justify-content:center;color:#17211b;padding:24px}
+.box{width:min(420px,92vw);background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:32px;box-shadow:0 15px 50px rgba(0,0,0,.08)}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:25px}.icon{width:46px;height:46px;border-radius:12px;background:#0f766e;color:#fff;display:grid;place-items:center;font-size:24px}.brand h1{font-size:20px;color:#14532d}.brand p{font-size:12px;color:#6b7280;margin-top:3px}.title{font-size:26px;margin-bottom:7px}.sub{font-size:13px;color:#6b7280;margin-bottom:23px}
+label{display:block;font-size:13px;font-weight:700;margin:14px 0 7px}input{width:100%;padding:13px 14px;border:1px solid #d1d5db;border-radius:10px;font-size:14px;outline:none}input:focus{border-color:#0f766e;box-shadow:0 0 0 3px #ccfbf1}
+button{width:100%;padding:13px;border:0;border-radius:10px;background:#0f766e;color:white;font-weight:700;font-size:14px;cursor:pointer;margin-top:20px;transition:.15s}button:hover{background:#115e59}button:disabled{opacity:.65;cursor:not-allowed}
+.error,.google-error{display:none;padding:10px 12px;border-radius:9px;font-size:12px;margin-top:15px}.error{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}.google-error{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}
+.bottom{text-align:center;font-size:13px;color:#6b7280;margin-top:20px}.bottom a{color:#0f766e;font-weight:700;text-decoration:none}.note{margin-top:18px;font-size:11px;color:#9ca3af;text-align:center}
+.divider{display:flex;align-items:center;gap:10px;margin:20px 0 16px;color:#9ca3af;font-size:12px}.divider::before,.divider::after{content:"";height:1px;background:#e5e7eb;flex:1}
+.google-wrap{display:flex;justify-content:center;align-items:center;min-height:44px}.google-wrap:empty{display:none}.google-fallback{display:none;width:100%;margin-top:0;background:#fff;color:#374151;border:1px solid #d1d5db}.google-fallback:hover{background:#f9fafb}.setup-note{display:none;text-align:center;font-size:11px;color:#9ca3af;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="brand"><div class="icon">🌿</div><div><h1>Algae Carbon Monitor</h1><p>Carbon Sequestration Monitoring Platform</p></div></div>
+  <h2 class="title">Welcome back</h2>
+  <p class="sub">Login to save selected farm areas and satellite images.</p>
+
+  <form id="loginForm" novalidate>
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" autocomplete="email" required>
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <button id="loginBtn" type="submit">Login</button>
+    <div id="error" class="error" role="alert"></div>
+  </form>
+
+  <div class="divider" id="googleDivider"><span>OR</span></div>
+  <div id="googleButton" class="google-wrap"></div>
+  <button id="googleFallback" class="google-fallback" type="button">Continue with Google</button>
+  <div id="googleSetupNote" class="setup-note">Google login needs a GOOGLE_CLIENT_ID in the .env file.</div>
+  <div id="googleError" class="google-error" role="alert"></div>
+
+  <div class="bottom">Don't have an account? <a href="/register.html">Create account</a></div>
+  <div class="note">Local student project • HackOut26</div>
+</div>
+<script>
+const errorBox = document.getElementById("error");
+const googleError = document.getElementById("googleError");
+const loginBtn = document.getElementById("loginBtn");
+const googleFallback = document.getElementById("googleFallback");
+const googleDivider = document.getElementById("googleDivider");
+const googleSetupNote = document.getElementById("googleSetupNote");
+
+function showError(el, message) {
+  el.textContent = message;
+  el.style.display = "block";
+}
+
+function clearErrors() {
+  errorBox.style.display = "none";
+  googleError.style.display = "none";
+}
+
+document.getElementById("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  clearErrors();
+
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  if (!email || !password) return showError(errorBox, "Enter your email and password.");
+
+  loginBtn.disabled = true;
+  loginBtn.textContent = "Signing in…";
+  try {
+    const response = await fetch("/api/login", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      credentials:"same-origin",
+      body:JSON.stringify({email, password})
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Login failed.");
+    location.replace("/");
+  } catch (err) {
+    showError(errorBox, err.message || "Unable to connect to the server.");
+    loginBtn.disabled = false;
+    loginBtn.textContent = "Login";
+  }
+});
+
+async function handleGoogleCredential(response) {
+  clearErrors();
+  try {
+    const result = await fetch("/api/auth/google", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      credentials:"same-origin",
+      body: JSON.stringify({credential: response.credential})
+    });
+    const data = await result.json().catch(() => ({}));
+    if (!result.ok) throw new Error(data.error || "Google login failed.");
+    location.replace("/");
+  } catch (err) {
+    showError(googleError, err.message || "Google login failed.");
+  }
+}
+
+function showGoogleSetupMessage() {
+  googleFallback.style.display = "block";
+  googleSetupNote.style.display = "block";
+  googleFallback.onclick = () => showError(googleError, "Google login is not configured. Add GOOGLE_CLIENT_ID to .env and restart the server.");
+}
+
+async function setupGoogleLogin() {
+  try {
+    const response = await fetch("/api/auth/google/config", {credentials:"same-origin"});
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || !data.enabled || !data.clientId) {
+      showGoogleSetupMessage();
+      return;
+    }
+
+    const deadline = Date.now() + 10000;
+    const waitForGoogle = setInterval(() => {
+      if (window.google && google.accounts && google.accounts.id) {
+        clearInterval(waitForGoogle);
+        try {
+          google.accounts.id.initialize({client_id:data.clientId, callback:handleGoogleCredential});
+          google.accounts.id.renderButton(document.getElementById("googleButton"), {
+            theme:"outline", size:"large", width:350, text:"signin_with", shape:"rectangular"
+          });
+          googleFallback.style.display = "none";
+          googleSetupNote.style.display = "none";
+        } catch (err) {
+          showGoogleSetupMessage();
+          showError(googleError, "Google login could not be initialized.");
+        }
+      } else if (Date.now() > deadline) {
+        clearInterval(waitForGoogle);
+        showGoogleSetupMessage();
+      }
+    }, 100);
+  } catch (err) {
+    showGoogleSetupMessage();
+  }
+}
+
+// If the session is already valid, skip the login screen.
+fetch("/api/me", {credentials:"same-origin"}).then(r => {
+  if (r.ok) location.replace("/");
+}).catch(() => {});
+
+setupGoogleLogin();
+</script>
+</body>
+</html>

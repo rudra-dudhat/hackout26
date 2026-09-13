@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Algae Carbon Monitor</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;background:#f4f7f6;color:#1f2937}header{background:#fff;border-bottom:1px solid #e5e7eb;padding:15px 6%;display:flex;justify-content:space-between;align-items:center;gap:20px;position:sticky;top:0;z-index:1000}.logo{display:flex;align-items:center;gap:10px}.logo-icon{width:42px;height:42px;background:#0f766e;color:#fff;border-radius:10px;display:grid;place-items:center;font-size:22px}.logo h1{font-size:21px;color:#14532d}.logo p{font-size:12px;color:#6b7280;margin-top:3px}.header-right{display:flex;align-items:center;gap:12px}.farm-name{font-size:13px;font-weight:700}.live{background:#dcfce7;color:#166534;padding:7px 12px;border-radius:20px;font-size:11px;font-weight:700}.live-dot{display:inline-block;width:7px;height:7px;background:#16a34a;border-radius:50%;margin-right:5px}.logout{border:1px solid #d1d5db;background:#fff;color:#374151;border-radius:9px;padding:8px 12px;font-weight:700;cursor:pointer}.logout:hover{background:#f8fafc}main{max-width:1200px;margin:32px auto;padding:0 20px}.welcome{margin-bottom:23px}.welcome h2{font-size:27px;color:#111827;margin-bottom:7px}.welcome p{color:#6b7280;font-size:14px}.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:25px}.kpi-card,.card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 3px 12px rgba(0,0,0,.04)}.kpi-card{padding:23px}.kpi-top{display:flex;justify-content:space-between}.kpi-title{color:#6b7280;font-size:13px;font-weight:700;text-transform:uppercase}.kpi-icon{font-size:25px}.kpi-value{font-size:30px;font-weight:700;color:#14532d;margin-top:15px}.kpi-sub{margin-top:8px;font-size:12px;color:#16a34a}.card{padding:25px}.card-title{font-size:18px;font-weight:700;color:#111827;margin-bottom:5px}.card-description{font-size:13px;color:#6b7280;margin-bottom:20px}.chart-card,.map-card,.weather-card{margin-bottom:25px}.chart{height:250px;position:relative;border-left:2px solid #d1d5db;border-bottom:2px solid #d1d5db;margin:20px 10px 0 45px}.grid-line{position:absolute;left:0;width:100%;border-top:1px dashed #e5e7eb}.line{position:absolute;left:0;right:0;bottom:30px;height:170px}.line svg{width:100%;height:100%;overflow:visible}.line path{fill:none;stroke:#0f766e;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.point{fill:#fff;stroke:#0f766e;stroke-width:4}.chart-labels{display:flex;justify-content:space-between;padding:10px 0 0;color:#6b7280;font-size:11px}.monitor-grid{display:grid;grid-template-columns:1fr 1fr;gap:25px;margin-bottom:25px}.sensor-list{display:flex;flex-direction:column;gap:13px}.sensor-item{display:flex;justify-content:space-between;align-items:center;padding:13px;background:#f8fafc;border-radius:9px}.sensor-left{display:flex;align-items:center;gap:10px}.sensor-icon{font-size:20px}.sensor-name{font-size:13px;color:#374151}.sensor-value{font-size:13px;font-weight:700;color:#111827}.normal{background:#dcfce7;color:#166534;padding:4px 8px;border-radius:15px;font-size:10px;margin-left:8px}.satellite-box{text-align:center}.satellite-image{height:170px;border-radius:10px;margin-bottom:18px;background:#e5e7eb;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}.satellite-image img{width:100%;height:100%;object-fit:cover;display:block}.satellite-label{position:absolute;top:12px;left:12px;background:rgba(0,0,0,.62);color:#fff;padding:6px 10px;border-radius:6px;font-size:11px;z-index:2}.satellite-empty{color:#6b7280;font-size:13px}.satellite-data{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.sat-data-item{background:#f8fafc;padding:12px 5px;border-radius:8px}.sat-data-item small{display:block;color:#6b7280;font-size:10px;margin-bottom:5px}.sat-data-item strong{font-size:14px}.high{color:#16a34a}.search-area{display:flex;gap:10px;margin-bottom:15px}.search-area input{flex:1;padding:13px 15px;border:1px solid #d1d5db;border-radius:9px;font-size:14px;outline:none}.search-area input:focus{border-color:#0f766e}.search-btn,.reset-btn{padding:13px 20px;border:none;border-radius:9px;font-weight:700;cursor:pointer}.search-btn{background:#0f766e;color:#fff}.search-btn:hover{background:#115e59}.reset-btn{background:#e5e7eb;color:#374151}.search-results{display:none;background:#fff;border:1px solid #e5e7eb;border-radius:9px;margin-bottom:15px;overflow:hidden}.search-result{padding:12px 15px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px}.search-result:hover{background:#f0fdfa}.map-instruction{background:#ecfdf5;color:#065f46;padding:12px 15px;border-radius:9px;margin-bottom:15px;font-size:13px}.map-container{width:100%;height:450px;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;position:relative}#map{width:100%;height:100%}.map-info{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:15px}.map-stat{background:#f8fafc;padding:14px;border-radius:9px}.map-stat small{display:block;color:#6b7280;font-size:10px;margin-bottom:5px}.map-stat strong{font-size:15px;color:#14532d}.points-table{margin-top:15px;width:100%;border-collapse:collapse}.points-table th,.points-table td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:12px}.points-table th{background:#f8fafc;color:#374151}.action-row{display:flex;gap:10px;margin-top:15px}.save-area-btn{display:none;padding:12px 18px;border:0;border-radius:9px;background:#14532d;color:#fff;font-weight:700;cursor:pointer}.save-area-btn:hover{background:#166534}.save-area-btn:disabled{opacity:.6;cursor:not-allowed}.saved-box{margin-top:18px;display:none}.saved-box h3{font-size:14px;margin-bottom:10px}.saved-item{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:12px;background:#f8fafc;border-radius:9px;margin-bottom:8px;font-size:12px}.saved-item button{border:0;background:#fee2e2;color:#b91c1c;padding:7px 10px;border-radius:7px;font-weight:700;cursor:pointer}.weather-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.weather-status{background:#dcfce7;color:#166534;padding:6px 10px;border-radius:15px;font-size:11px;font-weight:700}.weather-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.weather-item{background:#f8fafc;padding:15px;border-radius:10px}.weather-item small{display:block;color:#6b7280;font-size:11px;margin-bottom:7px}.weather-item strong{font-size:17px;color:#111827}.weather-location{background:#f0fdfa;padding:12px;border-radius:9px;margin-bottom:15px;color:#115e59;font-size:13px}.mrv-card{background:#14532d;color:#fff;display:flex;justify-content:space-between;align-items:center;padding:27px;border-radius:14px;margin-bottom:25px}.mrv-card h3{font-size:19px;margin-bottom:7px}.mrv-card p{color:#d1fae5;font-size:13px}.mrv-button{background:#fff;color:#14532d;border:none;padding:12px 20px;border-radius:8px;font-weight:700;cursor:pointer}.toast{position:fixed;right:20px;bottom:20px;background:#111827;color:#fff;padding:13px 16px;border-radius:10px;font-size:13px;display:none;z-index:3000;box-shadow:0 10px 30px rgba(0,0,0,.2)}footer{text-align:center;padding:20px;color:#9ca3af;font-size:12px}@media(max-width:850px){.kpi-grid,.monitor-grid{grid-template-columns:1fr}.weather-grid{grid-template-columns:repeat(2,1fr)}.map-info{grid-template-columns:repeat(2,1fr)}.mrv-card{flex-direction:column;align-items:flex-start;gap:20px}}@media(max-width:500px){header{padding:12px 4%}.header-right .farm-name,.header-right .live{display:none}.search-area{flex-direction:column}.map-container{height:350px}.weather-grid,.map-info,.satellite-data{grid-template-columns:1fr}.chart{margin-left:25px}.card{padding:18px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-icon">🌿</div><div><h1>Algae Carbon Monitor</h1><p>Carbon Sequestration Monitoring Platform</p></div></div>
+  <div class="header-right"><div class="farm-name" id="userName">Loading...</div><div class="live"><span class="live-dot"></span>API LIVE</div><button class="logout" onclick="logout()">Logout</button></div>
+</header>
+
+<main>
+  <div class="welcome"><h2>Farm Overview</h2><p>Select your algae farm area and monitor current weather conditions.</p></div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-top"><div class="kpi-title">Biomass</div><div class="kpi-icon">🌱</div></div><div class="kpi-value">842 kg</div><div class="kpi-sub">↑ 8.4% growth</div></div>
+    <div class="kpi-card"><div class="kpi-top"><div class="kpi-title">CO₂ Captured</div><div class="kpi-icon">♻️</div></div><div class="kpi-value">1,542 kg</div><div class="kpi-sub">Estimated CO₂ fixation</div></div>
+    <div class="kpi-card"><div class="kpi-top"><div class="kpi-title">Confidence</div><div class="kpi-icon">🛡️</div></div><div class="kpi-value">91%</div><div class="kpi-sub">High confidence</div></div>
+  </div>
+
+  <div class="card chart-card">
+    <div class="card-title">♻️ CO₂ Capture Trend</div><div class="card-description">Estimated carbon capture over the last 7 days</div>
+    <div class="chart"><div class="grid-line" style="top:0"></div><div class="grid-line" style="top:25%"></div><div class="grid-line" style="top:50%"></div><div class="grid-line" style="top:75%"></div><div class="line"><svg viewBox="0 0 700 170" preserveAspectRatio="none"><path d="M 0 145 L 100 130 L 200 120 L 300 95 L 400 75 L 500 55 L 600 35 L 700 20"></path><circle class="point" cx="0" cy="145" r="5"></circle><circle class="point" cx="100" cy="130" r="5"></circle><circle class="point" cx="200" cy="120" r="5"></circle><circle class="point" cx="300" cy="95" r="5"></circle><circle class="point" cx="400" cy="75" r="5"></circle><circle class="point" cx="500" cy="55" r="5"></circle><circle class="point" cx="600" cy="35" r="5"></circle><circle class="point" cx="700" cy="20" r="5"></circle></svg></div><div class="chart-labels"><span>5 Sep</span><span>6 Sep</span><span>7 Sep</span><span>8 Sep</span><span>9 Sep</span><span>10 Sep</span><span>11 Sep</span></div></div>
+  </div>
+
+  <div class="monitor-grid">
+    <div class="card"><div class="card-title">📡 Farm Sensors</div><div class="card-description">Current sensor readings</div><div class="sensor-list">
+      <div class="sensor-item"><div class="sensor-left"><div class="sensor-icon">🌡️</div><div class="sensor-name">Temperature</div></div><div><span class="sensor-value">29°C</span><span class="normal">NORMAL</span></div></div>
+      <div class="sensor-item"><div class="sensor-left"><div class="sensor-icon">⚗️</div><div class="sensor-name">pH</div></div><div><span class="sensor-value">8.2</span><span class="normal">NORMAL</span></div></div>
+      <div class="sensor-item"><div class="sensor-left"><div class="sensor-icon">💧</div><div class="sensor-name">Dissolved Oxygen</div></div><div><span class="sensor-value">7.8 mg/L</span><span class="normal">NORMAL</span></div></div>
+      <div class="sensor-item"><div class="sensor-left"><div class="sensor-icon">🌊</div><div class="sensor-name">Turbidity</div></div><div><span class="sensor-value">18 NTU</span><span class="normal">NORMAL</span></div></div>
+    </div></div>
+
+    <div class="card"><div class="card-title">🛰 Satellite Monitoring</div><div class="card-description">Latest saved satellite observation</div><div class="satellite-box">
+      <div class="satellite-image" id="satellitePreview"><div class="satellite-label">SATELLITE IMAGE</div><div class="satellite-empty" id="satelliteEmpty">Select 4 points and save the area.</div></div>
+      <div class="satellite-data"><div class="sat-data-item"><small>Algae Index</small><strong>0.14</strong></div><div class="sat-data-item"><small>Cloud Cover</small><strong>8%</strong></div><div class="sat-data-item"><small>Algae Signal</small><strong class="high">HIGH</strong></div></div>
+    </div></div>
+  </div>
+
+  <div class="card map-card">
+    <div class="card-title">📍 Select Farm Area</div>
+    <div class="card-description">Search an area first, then select exactly 4 points. When you save it, the backend downloads and stores a satellite image for that selected area.</div>
+    <div class="search-area"><input type="text" id="areaSearch" placeholder="Search area e.g. Surat, Ahmedabad, Gandhinagar"><button class="search-btn" onclick="searchArea()">Search</button><button class="reset-btn" onclick="resetMap()">Reset</button></div>
+    <div id="searchResults" class="search-results"></div>
+    <div class="map-instruction" id="mapInstruction">🔎 Search an area first. Then click 4 points on the map.</div>
+    <div class="map-container"><div id="map"></div></div>
+    <div class="map-info">
+      <div class="map-stat"><small>Selected Points</small><strong id="pointCount">0 / 4</strong></div>
+      <div class="map-stat"><small>Area</small><strong id="areaValue">-</strong></div>
+      <div class="map-stat"><small>Center Latitude</small><strong id="centerLat">-</strong></div>
+      <div class="map-stat"><small>Center Longitude</small><strong id="centerLng">-</strong></div>
+    </div>
+    <table class="points-table"><thead><tr><th>Point</th><th>Latitude</th><th>Longitude</th></tr></thead><tbody id="pointsTable"><tr><td>-</td><td>-</td><td>-</td></tr></tbody></table>
+    <div class="action-row"><button id="saveAreaBtn" class="save-area-btn" onclick="saveSelectedArea()">💾 Save Area + Satellite Image</button></div>
+    <div id="savedBox" class="saved-box"><h3>Saved Areas</h3><div id="savedAreas"></div></div>
+  </div>
+
+  <div class="card weather-card">
+    <div class="weather-header"><div><div class="card-title">🌦 Current Weather</div><div class="card-description">Weather at the selected farm area</div></div><div id="weatherStatus" class="weather-status">WAITING</div></div>
+    <div id="weatherLocation" class="weather-location">Select 4 points to load weather.</div>
+    <div class="weather-grid">
+      <div class="weather-item"><small>Temperature</small><strong id="weatherTemp">-</strong></div>
+      <div class="weather-item"><small>Relative Humidity</small><strong id="weatherHumidity">-</strong></div>
+      <div class="weather-item"><small>Apparent Temperature</small><strong id="weatherApparent">-</strong></div>
+      <div class="weather-item"><small>Dew Point</small><strong id="weatherDew">-</strong></div>
+      <div class="weather-item"><small>Precipitation</small><strong id="weatherPrecipitation">-</strong></div>
+      <div class="weather-item"><small>Rain</small><strong id="weatherRain">-</strong></div>
+      <div class="weather-item"><small>Cloud Cover</small><strong id="weatherCloud">-</strong></div>
+      <div class="weather-item"><small>Pressure</small><strong id="weatherPressure">-</strong></div>
+      <div class="weather-item"><small>Visibility</small><strong id="weatherVisibility">-</strong></div>
+      <div class="weather-item"><small>Wind Speed</small><strong id="weatherWind">-</strong></div>
+      <div class="weather-item"><small>Wind Direction</small><strong id="weatherWindDirection">-</strong></div>
+      <div class="weather-item"><small>Wind Gusts</small><strong id="weatherGust">-</strong></div>
+      <div class="weather-item"><small>Weather Condition</small><strong id="weatherCondition">-</strong></div>
+      <div class="weather-item"><small>Day / Night</small><strong id="weatherDay">-</strong></div>
+      <div class="weather-item"><small>Surface Temperature</small><strong id="weatherSurface">-</strong></div>
+      <div class="weather-item"><small>Weather Time</small><strong id="weatherTime">-</strong></div>
+    </div>
+  </div>
+
+  <div class="mrv-card"><div><h3>📄 Carbon MRV Report</h3><p>Generate a report containing biomass, CO₂ estimation, satellite, selected area and weather evidence.</p></div><button class="mrv-button" onclick="generateReport()">Generate MRV Report</button></div>
+</main>
+
+<footer>Algae Carbon Monitoring Platform • HackOut26</footer>
+<div id="toast" class="toast"></div>
+
+<script>
+let map;
+let selectedPoints = [];
+let pointMarkers = [];
+let polygon = null;
+let searchMarker = null;
+let selectedCenter = null;
+let weatherRefreshTimer = null;
+let latestSavedArea = null;
+
+const weatherCodes = {
+  0:"Clear sky",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Depositing rime fog",
+  51:"Light drizzle",53:"Moderate drizzle",55:"Dense drizzle",56:"Light freezing drizzle",57:"Dense freezing drizzle",
+  61:"Slight rain",63:"Moderate rain",65:"Heavy rain",66:"Light freezing rain",67:"Heavy freezing rain",
+  71:"Slight snowfall",73:"Moderate snowfall",75:"Heavy snowfall",77:"Snow grains",
+  80:"Slight rain showers",81:"Moderate rain showers",82:"Violent rain showers",
+  85:"Slight snow showers",86:"Heavy snow showers",95:"Thunderstorm",96:"Thunderstorm with slight hail",99:"Thunderstorm with heavy hail"
+};
+
+function toast(message) {
+  const el = document.getElementById("toast");
+  el.textContent = message;
+  el.style.display = "block";
+  clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => el.style.display = "none", 3500);
+}
+
+async function api(url, options = {}) {
+  const response = await fetch(url, options);
+  const data = await response.json().catch(() => ({}));
+  if (response.status === 401) {
+    location.href = "/login.html";
+    throw new Error("Please login.");
+  }
+  if (!response.ok) throw new Error(data.error || "Request failed.");
+  return data;
+}
+
+async function init() {
+  try {
+    const data = await api("/api/me");
+    document.getElementById("userName").textContent = data.user.name;
+    initializeMap();
+    loadSavedAreas();
+  } catch (error) {
+    location.href = "/login.html";
+  }
+}
+
+function initializeMap() {
+  map = L.map("map").setView([23.0225,72.5714], 10);
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+    maxZoom:19,
+    attribution:"Sources: Esri, DigitalGlobe, GeoEye, i-cubed, USDA FSA, USGS and the GIS User Community"
+  }).addTo(map);
+
+  map.on("click", event => {
+    if (selectedPoints.length >= 4) return;
+    addPoint(event.latlng.lat, event.latlng.lng);
+  });
+}
+
+function addPoint(lat, lng) {
+  selectedPoints.push({lat,lng});
+  const marker = L.marker([lat,lng]).addTo(map);
+  marker.bindPopup("Point " + selectedPoints.length + "<br>Latitude: " + lat.toFixed(6) + "<br>Longitude: " + lng.toFixed(6));
+  marker.openPopup();
+  pointMarkers.push(marker);
+  updatePointTable();
+  document.getElementById("pointCount").textContent = selectedPoints.length + " / 4";
+
+  if (selectedPoints.length === 4) {
+    createPolygon();
+  } else {
+    document.getElementById("mapInstruction").textContent = "Select point " + (selectedPoints.length + 1) + " of 4.";
+  }
+}
+
+function createPolygon() {
+  if (polygon) map.removeLayer(polygon);
+
+  const coordinates = selectedPoints.map(p => [p.lng,p.lat]);
+  coordinates.push(coordinates[0]);
+
+  polygon = L.polygon(selectedPoints.map(p => [p.lat,p.lng]), {
+    color:"#0f766e",fillColor:"#10b981",fillOpacity:.30,weight:3
+  }).addTo(map);
+
+  const geo = turf.polygon([coordinates]);
+  const areaM2 = turf.area(geo);
+  const center = turf.centroid(geo).geometry.coordinates;
+
+  selectedCenter = {lat:center[1],lng:center[0]};
+
+  document.getElementById("areaValue").innerHTML =
+    areaM2.toFixed(2) + " m²<br>" +
+    (areaM2/10000).toFixed(4) + " ha<br>" +
+    (areaM2/4046.8564224).toFixed(4) + " acres";
+
+  document.getElementById("centerLat").textContent = center[1].toFixed(6);
+  document.getElementById("centerLng").textContent = center[0].toFixed(6);
+  document.getElementById("mapInstruction").textContent = "✅ Polygon created. Weather loaded. Click Save to store the satellite image.";
+  document.getElementById("saveAreaBtn").style.display = "inline-block";
+  map.fitBounds(polygon.getBounds(), {padding:[30,30]});
+  fetchWeather(center[1],center[0]);
+}
+
+function updatePointTable() {
+  const table = document.getElementById("pointsTable");
+  if (!selectedPoints.length) {
+    table.innerHTML = "<tr><td>-</td><td>-</td><td>-</td></tr>";
+    return;
+  }
+  table.innerHTML = selectedPoints.map((p,i) =>
+    "<tr><td>Point " + (i+1) + "</td><td>" + p.lat.toFixed(6) + "</td><td>" + p.lng.toFixed(6) + "</td></tr>"
+  ).join("");
+}
+
+async function searchArea() {
+  const query = document.getElementById("areaSearch").value.trim();
+  if (!query) return toast("Please enter an area name.");
+
+  const box = document.getElementById("searchResults");
+  box.style.display = "block";
+  box.innerHTML = "<div class='search-result'>Searching...</div>";
+
+  try {
+    const data = await api("/api/search?q=" + encodeURIComponent(query));
+    box.innerHTML = "";
+    if (!data.length) {
+      box.innerHTML = "<div class='search-result'>No area found.</div>";
+      return;
+    }
+    data.forEach(result => {
+      const item = document.createElement("div");
+      item.className = "search-result";
+      item.textContent = result.display_name;
+      item.onclick = () => selectSearchResult(result);
+      box.appendChild(item);
+    });
+  } catch (error) {
+    box.innerHTML = "<div class='search-result'>" + error.message + "</div>";
+  }
+}
+
+function selectSearchResult(result) {
+  const lat = Number(result.lat);
+  const lng = Number(result.lon);
+  map.setView([lat,lng],15);
+
+  if (searchMarker) map.removeLayer(searchMarker);
+  searchMarker = L.marker([lat,lng]).addTo(map);
+  searchMarker.bindPopup("<b>Selected Search Area</b><br>" + result.display_name).openPopup();
+
+  document.getElementById("searchResults").style.display = "none";
+  document.getElementById("mapInstruction").textContent = "Area found. Now click 4 points on the map.";
+}
+
+function resetMap() {
+  selectedPoints = [];
+  selectedCenter = null;
+  latestSavedArea = null;
+  pointMarkers.forEach(marker => map.removeLayer(marker));
+  pointMarkers = [];
+  if (polygon) { map.removeLayer(polygon); polygon = null; }
+  if (searchMarker) { map.removeLayer(searchMarker); searchMarker = null; }
+  if (weatherRefreshTimer) { clearInterval(weatherRefreshTimer); weatherRefreshTimer = null; }
+
+  document.getElementById("pointCount").textContent = "0 / 4";
+  document.getElementById("areaValue").textContent = "-";
+  document.getElementById("centerLat").textContent = "-";
+  document.getElementById("centerLng").textContent = "-";
+  document.getElementById("pointsTable").innerHTML = "<tr><td>-</td><td>-</td><td>-</td></tr>";
+  document.getElementById("mapInstruction").textContent = "🔎 Search an area first. Then click 4 points on the map.";
+  document.getElementById("saveAreaBtn").style.display = "none";
+  document.getElementById("saveAreaBtn").disabled = false;
+  document.getElementById("saveAreaBtn").textContent = "💾 Save Area + Satellite Image";
+  resetWeatherValues();
+  document.getElementById("weatherStatus").textContent = "WAITING";
+  document.getElementById("weatherLocation").textContent = "Select 4 points to load weather.";
+  clearSatellitePreview();
+}
+
+async function fetchWeather(lat,lng) {
+  const status = document.getElementById("weatherStatus");
+  status.textContent = "LOADING";
+  try {
+    const data = await api("/api/weather?lat=" + lat + "&lng=" + lng);
+    updateWeather(data);
+    status.textContent = "LIVE";
+    document.getElementById("weatherLocation").textContent =
+      "Weather location: " + lat.toFixed(6) + ", " + lng.toFixed(6) +
+      " • Updated: " + new Date().toLocaleTimeString();
+
+    if (weatherRefreshTimer) clearInterval(weatherRefreshTimer);
+    weatherRefreshTimer = setInterval(() => {
+      if (selectedCenter) fetchWeather(selectedCenter.lat,selectedCenter.lng);
+    }, 5*60*1000);
+  } catch (error) {
+    status.textContent = "ERROR";
+    document.getElementById("weatherLocation").textContent = error.message;
+  }
+}
+
+function updateWeather(data) {
+  const w = data.current;
+  document.getElementById("weatherTemp").textContent = w.temperature_2m + " °C";
+  document.getElementById("weatherHumidity").textContent = w.relative_humidity_2m + " %";
+  document.getElementById("weatherApparent").textContent = w.apparent_temperature + " °C";
+  document.getElementById("weatherDew").textContent = w.dew_point_2m + " °C";
+  document.getElementById("weatherPrecipitation").textContent = w.precipitation + " mm";
+  document.getElementById("weatherRain").textContent = w.rain + " mm";
+  document.getElementById("weatherCloud").textContent = w.cloud_cover + " %";
+  document.getElementById("weatherPressure").textContent = w.pressure_msl + " hPa";
+  document.getElementById("weatherVisibility").textContent = (w.visibility/1000).toFixed(2) + " km";
+  document.getElementById("weatherWind").textContent = w.wind_speed_10m + " km/h";
+  document.getElementById("weatherWindDirection").textContent = w.wind_direction_10m + "°";
+  document.getElementById("weatherGust").textContent = w.wind_gusts_10m + " km/h";
+  document.getElementById("weatherCondition").textContent = weatherCodes[w.weather_code] || "Unknown";
+  document.getElementById("weatherDay").textContent = w.is_day === 1 ? "Day" : "Night";
+  document.getElementById("weatherSurface").textContent = w.surface_temperature + " °C";
+  document.getElementById("weatherTime").textContent = w.time;
+}
+
+function resetWeatherValues() {
+  ["weatherTemp","weatherHumidity","weatherApparent","weatherDew","weatherPrecipitation","weatherRain","weatherCloud","weatherPressure","weatherVisibility","weatherWind","weatherWindDirection","weatherGust","weatherCondition","weatherDay","weatherSurface","weatherTime"].forEach(id => document.getElementById(id).textContent = "-");
+}
+
+async function saveSelectedArea() {
+  if (selectedPoints.length !== 4) return toast("Select exactly 4 points first.");
+
+  const button = document.getElementById("saveAreaBtn");
+  button.disabled = true;
+  button.textContent = "⏳ Downloading satellite image...";
+  document.getElementById("mapInstruction").textContent = "⏳ Backend is downloading and storing the satellite image. Please wait.";
+
+  try {
+    const data = await api("/api/areas", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({points:selectedPoints})
+    });
+
+    latestSavedArea = data.area;
+    showSatelliteImage(data.area);
+    await loadSavedAreas();
+    button.textContent = "✅ Area + Image Saved";
+    document.getElementById("mapInstruction").textContent = "✅ Saved successfully. The image is now stored on the server for your model.";
+    toast("Satellite image saved successfully.");
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = "💾 Save Area + Satellite Image";
+    document.getElementById("mapInstruction").textContent = "❌ " + error.message;
+    toast(error.message);
+  }
+}
+
+function showSatelliteImage(area) {
+  const box = document.getElementById("satellitePreview");
+  box.innerHTML = '<div class="satellite-label">SAVED SATELLITE IMAGE</div><img src="' + area.image_url + '?t=' + Date.now() + '" alt="Saved satellite image of selected area">';
+}
+
+function clearSatellitePreview() {
+  document.getElementById("satellitePreview").innerHTML = '<div class="satellite-label">SATELLITE IMAGE</div><div class="satellite-empty" id="satelliteEmpty">Select 4 points and save the area.</div>';
+}
+
+async function loadSavedAreas() {
+  const data = await api("/api/areas");
+  const box = document.getElementById("savedAreas");
+  const savedBox = document.getElementById("savedBox");
+
+  if (!data.areas.length) {
+    savedBox.style.display = "none";
+    return;
+  }
+
+  savedBox.style.display = "block";
+  box.innerHTML = data.areas.map(area =>
+    '<div class="saved-item"><div><b>Area #' + area.id + '</b> • ' +
+    Number(area.area_hectares).toFixed(4) + ' ha • ' +
+    new Date(area.created_at + "Z").toLocaleString() +
+    '</div><button onclick="deleteArea(' + area.id + ')">Delete</button></div>'
+  ).join("");
+
+  if (!latestSavedArea) {
+    latestSavedArea = data.areas[0];
+    showSatelliteImage(latestSavedArea);
+  }
+}
+
+async function deleteArea(id) {
+  if (!confirm("Delete this saved area and its satellite image?")) return;
+  try {
+    await api("/api/areas/" + id, {method:"DELETE"});
+    if (latestSavedArea && latestSavedArea.id === id) {
+      latestSavedArea = null;
+      clearSatellitePreview();
+    }
+    await loadSavedAreas();
+    toast("Saved area deleted.");
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+async function logout() {
+  await fetch("/api/logout",{method:"POST"});
+  location.href = "/login.html";
+}
+
+function generateReport() {
+  if (!selectedPoints.length) return alert("Please select an area first.");
+  alert(
+    "MRV Report Generated!\n\n" +
+    "Biomass: 842 kg\n" +
+    "Estimated CO₂: 1542 kg\n" +
+    "Confidence: 91%\n\n" +
+    "Selected Area:\n" + document.getElementById("areaValue").innerText +
+    "\n\nCenter:\n" + document.getElementById("centerLat").innerText + ", " + document.getElementById("centerLng").innerText +
+    (latestSavedArea ? "\n\nSatellite image: SAVED" : "\n\nSatellite image: NOT SAVED")
+  );
+}
+
+document.getElementById("areaSearch").addEventListener("keydown", e => {
+  if (e.key === "Enter") searchArea();
+});
+
+init();
+</script>
+</body>
+</html>
